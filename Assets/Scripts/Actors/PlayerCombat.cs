@@ -15,6 +15,12 @@ namespace Pluto.Actors
         [SerializeField] private float _attackDuration = 0.3f;
         [SerializeField] private float _microDashForce = 12f;
 
+        [Header("Special/Magic Settings")]
+        [SerializeField] private float _specialDuration = 0.5f;
+        [SerializeField] private float _specialMicroDashForce = 18f;
+        [SerializeField] private float _magicDuration = 0.2f;
+        [SerializeField] private float _magicMicroDashForce = 5f;
+
         private Rigidbody _rb;
         private int _comboIndex = 0;
         private float _lastAttackTime;
@@ -29,7 +35,7 @@ namespace Pluto.Actors
         }
 
         /// <summary>
-        /// Input System의 Attack 액션 이벤트 핸들러.
+        /// Input System의 Attack 액션 이벤트 핸들러. (마우스 왼쪽)
         /// </summary>
         public void OnAttack(InputValue value)
         {
@@ -37,6 +43,41 @@ namespace Pluto.Actors
             {
                 HandleAttackInput();
             }
+        }
+
+        /// <summary>
+        /// Input System의 Special 액션 이벤트 핸들러. (Q 키)
+        /// </summary>
+        public void OnSpecial(InputValue value)
+        {
+            if (value.isPressed && !_isAttacking)
+            {
+                StartCoroutine(SpecialAttackCoroutine());
+            }
+        }
+
+        /// <summary>
+        /// Input System의 Magic 액션 이벤트 핸들러. (마우스 오른쪽)
+        /// </summary>
+        public void OnMagic(InputValue value)
+        {
+            if (value.isPressed && !_isAttacking)
+            {
+                StartCoroutine(MagicAttackCoroutine());
+            }
+        }
+
+        /// <summary>
+        /// 공격 동작을 즉시 중단합니다. (대시 캔슬용)
+        /// </summary>
+        public void CancelAttack()
+        {
+            if (!_isAttacking) return;
+            
+            StopAllCoroutines();
+            _isAttacking = false;
+            _inputBuffered = false;
+            Debug.Log("<color=yellow>[Pluto Combat]</color> Attack Cancelled!");
         }
 
         private void HandleAttackInput()
@@ -82,6 +123,30 @@ namespace Pluto.Actors
             {
                 HandleAttackInput();
             }
+        }
+
+        private IEnumerator SpecialAttackCoroutine()
+        {
+            _isAttacking = true;
+            Debug.Log("<color=orange>[Pluto Combat]</color> <b>Special Attack! (Q)</b>");
+
+            Vector3 attackDir = transform.forward;
+            _rb.linearVelocity = attackDir * _specialMicroDashForce;
+
+            yield return new WaitForSeconds(_specialDuration);
+            _isAttacking = false;
+        }
+
+        private IEnumerator MagicAttackCoroutine()
+        {
+            _isAttacking = true;
+            Debug.Log("<color=cyan>[Pluto Combat]</color> <b>Magic Cast! (Right Click)</b>");
+
+            Vector3 attackDir = transform.forward;
+            _rb.linearVelocity = attackDir * _magicMicroDashForce;
+
+            yield return new WaitForSeconds(_magicDuration);
+            _isAttacking = false;
         }
     }
 }

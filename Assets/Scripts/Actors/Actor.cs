@@ -10,7 +10,7 @@ namespace Pluto.Actors
     public abstract class Actor : MonoBehaviour, IDamageable
     {
         [Header("Actor References")]
-        public Rigidbody Rb { get; private set; }
+        public Rigidbody Rb { get; protected set; }
 
         [Header("Actor States")]
         public bool IsInvincible { get; protected set; }

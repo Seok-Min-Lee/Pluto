@@ -31,11 +31,17 @@ namespace Pluto.Actors
         protected override void Awake()
         {
             base.Awake();
+            Debug.Log("<color=green>[Pluto]</color> PlayerController Initializing...");
             _statHandler = GetComponent<StatHandler>();
             _combat = GetComponent<PlayerCombat>();
             _mainCamera = Camera.main;
             
             _currentDashCharges = _maxDashCharges;
+
+            if (_combat == null)
+            {
+                Debug.LogWarning("PlayerController: PlayerCombat component not found!");
+            }
 
             if (_mainCamera == null)
             {
@@ -65,11 +71,12 @@ namespace Pluto.Actors
         }
 
         /// <summary>
-        /// InputSystem_Actions에서 호출되는 이동 입력 이벤트.
+        /// Input System의 Move 액션 이벤트 핸들러.
         /// </summary>
         public void OnMove(InputValue value)
         {
             _moveInput = value.Get<Vector2>();
+            Debug.Log($"<color=white>[Pluto]</color> Move Input: {_moveInput}");
         }
 
         /// <summary>
@@ -79,6 +86,12 @@ namespace Pluto.Actors
         {
             if (_currentDashCharges > 0 && !_isDashing)
             {
+                // 공격 중이라면 공격을 취소하고 대시 실행 (Dash Cancel)
+                if (_combat != null && _combat.IsAttacking)
+                {
+                    _combat.CancelAttack();
+                }
+
                 StartCoroutine(DashCoroutine());
             }
         }
