@@ -12,6 +12,9 @@ namespace Pluto.Actors
         [Header("Actor References")]
         public Rigidbody Rb { get; private set; }
 
+        [Header("Actor States")]
+        public bool IsInvincible { get; protected set; }
+
         protected virtual void Awake()
         {
             Rb = GetComponent<Rigidbody>();
@@ -23,11 +26,13 @@ namespace Pluto.Actors
         }
 
         /// <summary>
-        /// 데미지를 입었을 때의 기본 처리.
+        /// 데미지를 입었을 때의 기본 처리. 무적 상태일 경우 무시합니다.
         /// </summary>
         /// <param name="amount">데미지 양</param>
         public virtual void TakeDamage(float amount)
         {
+            if (IsInvincible) return;
+
             Debug.Log($"{gameObject.name} took {amount} damage.");
         }
     }
