@@ -39,7 +39,7 @@
 | **Strategic** | [blueprint.md](Docs/01_Strategic/blueprint.md) | 프로젝트 핵심 기술 사양 및 설계도 |
 | **System** | [boon_architecture.md](Docs/02_Systems/boon_architecture.md) | 은혜 시스템의 기술적 아키텍처 |
 | **Combat** | [rarity_system.md](Docs/04_Combat/rarity_system.md) | 희귀도 가중치 및 성장 모델 |
-| **Guide** | [player_input_guide.md](Docs/05_Guides/player_input_guide.md) | 조작 체계 및 선입력 지침 |
+| **Guide** | [player_input_guide.md](Docs/05_Guides/player_input_guide.md), [agent_collaboration_rules.md](Docs/05_Guides/agent_collaboration_rules.md) | 조작 체계 및 에이전트 협업 지침 |
 
 ---
 
