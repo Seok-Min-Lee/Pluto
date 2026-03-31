@@ -1,71 +1,132 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Pluto.Core
 {
+    /// <summary>
+    /// 캐릭터가 가질 수 있는 핵심 물리량 유형.
+    /// </summary>
     public enum StatType
     {
         MaxHp,
         MoveSpeed,
+        DashRange,
         AttackPower,
         AttackSpeed,
         CriticalChance,
-        CriticalDamage
+        CriticalDamage,
+        MaxCallGauge,
+        MaxCastCount        // 혈석(Bloodstone) 최대 보유량
     }
 
-    [Serializable]
-    public class Stat
-    {
-        public StatType Type;
-        public float BaseValue;
-        public float Additive;
-        public float Multiplier;
+    public enum ModifierType { Additive, Multiplier }
 
-        public float TotalValue => (BaseValue + Additive) * (1 + Multiplier);
+    /// <summary>
+    /// 수치 변경의 최소 단위. 출처(Source)를 추적하여 정확한 삭제/관리가 가능합니다. (Dynamic Data)
+    /// </summary>
+    public class StatModifier
+    {
+        public float Value;
+        public ModifierType Type;
+        public object Source; // 수정자를 부여한 은혜(BoonInstance) 등
+
+        public StatModifier(float value, ModifierType type, object source)
+        {
+            Value = value;
+            Type = type;
+            Source = source;
+        }
     }
 
     /// <summary>
-    /// 캐릭터의 수치(스탯) 계산 및 관리를 담당하는 컴포넌트.
+    /// 단일 스탯의 정적 베이스(Static)와 동적 수정자(Instance)를 관리하는 클래스.
+    /// </summary>
+    [Serializable]
+    public class CoreStat
+    {
+        public StatType Type;
+        public float BaseValue; // 정적 데이터 (BaseStatData에서 주입)
+        
+        private readonly List<StatModifier> _modifiers = new List<StatModifier>();
+
+        public void AddModifier(StatModifier mod) => _modifiers.Add(mod);
+        public void RemoveModifiersFromSource(object source) => _modifiers.RemoveAll(m => m.Source == source);
+
+        public float FinalValue
+        {
+            get
+            {
+                float additiveSum = _modifiers.Where(m => m.Type == ModifierType.Additive).Sum(m => m.Value);
+                float multiplierSum = _modifiers.Where(m => m.Type == ModifierType.Multiplier).Sum(m => m.Value);
+                // 공식: (기본치 + 합산치) * (1 + 배율치)
+                return (BaseValue + additiveSum) * (1 + multiplierSum);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 캐릭터의 모든 수치(정적+동적)를 실시간으로 연산 및 제공하는 핵심 엔진.
     /// </summary>
     public class StatHandler : MonoBehaviour
     {
-        [SerializeField] 
-        private List<Stat> stats = new List<Stat>();
-        
-        private Dictionary<StatType, Stat> _statMap = new Dictionary<StatType, Stat>();
+        private Dictionary<StatType, CoreStat> _coreStatMap = new Dictionary<StatType, CoreStat>();
+        private Dictionary<string, float> _extraAttributes = new Dictionary<string, float>();
+
+        // 초기화 시 정적 데이터 로드전까지 사용할 기본 데이터 에셋
+        [SerializeField] private BaseStatData defaultBaseData;
 
         private void Awake()
         {
-            InitializeMap();
+            if (defaultBaseData != null) Initialize(defaultBaseData);
         }
 
-        private void InitializeMap()
+        /// <summary>
+        /// 정적 기초 데이터(SO)를 주입받아 시스템을 초기화합니다. (Static Data Loading)
+        /// </summary>
+        public void Initialize(BaseStatData data)
         {
-            _statMap.Clear();
-            foreach (var stat in stats)
+            _coreStatMap.Clear();
+            AddCoreStat(StatType.MaxHp, data.MaxHp);
+            AddCoreStat(StatType.MoveSpeed, data.MoveSpeed);
+            AddCoreStat(StatType.DashRange, data.DashRange);
+            AddCoreStat(StatType.AttackPower, data.AttackPower);
+            AddCoreStat(StatType.AttackSpeed, data.AttackSpeed);
+            AddCoreStat(StatType.CriticalChance, data.CriticalChance);
+            AddCoreStat(StatType.CriticalDamage, data.CriticalDamage);
+            AddCoreStat(StatType.MaxCallGauge, data.MaxCallGauge);
+            AddCoreStat(StatType.MaxCastCount, data.MaxCastCount);
+
+            // 추가 속성 가중치 로드 (Extra Attributes)
+            _extraAttributes.Clear();
+            foreach (var extra in data.ExtraWeights)
             {
-                _statMap[stat.Type] = stat;
+                _extraAttributes[extra.Tag] = extra.Value;
             }
         }
 
-        public float GetValue(StatType type)
+        private void AddCoreStat(StatType type, float baseVal)
         {
-            if (_statMap.TryGetValue(type, out var stat))
-            {
-                return stat.TotalValue;
-            }
-            return 0f;
+            _coreStatMap[type] = new CoreStat { Type = type, BaseValue = baseVal };
         }
 
-        public void AddAdditive(StatType type, float amount)
+        public float GetStatValue(StatType type) => _coreStatMap.TryGetValue(type, out var stat) ? stat.FinalValue : 0f;
+        public float GetAttributeValue(string tag) => _extraAttributes.TryGetValue(tag, out var val) ? val : 0f;
+
+        public void AddModifier(StatType type, StatModifier mod)
         {
-            if (_statMap.TryGetValue(type, out var stat)) stat.Additive += amount;
+            if (_coreStatMap.TryGetValue(type, out var stat)) stat.AddModifier(mod);
         }
 
-        public void AddMultiplier(StatType type, float amount)
+        public void RemoveModifiersFromSource(object source)
         {
-            if (_statMap.TryGetValue(type, out var stat)) stat.Multiplier += amount;
+            foreach (var stat in _coreStatMap.Values) stat.RemoveModifiersFromSource(source);
         }
+
+        /// <summary>
+        /// 태그 기반의 추가 속성을 동적으로 업데이트합니다. (Boon/Status 연동용)
+        /// </summary>
+        public void SetAttribute(string tag, float value) => _extraAttributes[tag] = value;
     }
 }

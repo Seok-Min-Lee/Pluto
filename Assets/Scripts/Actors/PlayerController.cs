@@ -76,15 +76,19 @@ namespace Pluto.Actors
         public void OnMove(InputValue value)
         {
             _moveInput = value.Get<Vector2>();
-            Debug.Log($"<color=white>[Pluto]</color> Move Input: {_moveInput}");
+            
+            if (_moveInput.sqrMagnitude > 0.01f)
+            {
+                Debug.Log($"[Pluto] OnMove Received: {_moveInput}");
+            }
         }
 
         /// <summary>
-        /// Space Bar 입력 시 대시 발동.
+        /// Space Bar 입력 시 대시 발동. (Dash Action)
         /// </summary>
-        public void OnJump(InputValue value)
+        public void OnDash(InputValue value)
         {
-            if (_currentDashCharges > 0 && !_isDashing)
+            if (value.isPressed && _currentDashCharges > 0 && !_isDashing)
             {
                 // 공격 중이라면 공격을 취소하고 대시 실행 (Dash Cancel)
                 if (_combat != null && _combat.IsAttacking)
@@ -135,7 +139,7 @@ namespace Pluto.Actors
         private void ApplyMovement()
         {
             // StatHandler가 없으면 기본값(10) 사용
-            float currentSpeed = _statHandler != null ? _statHandler.GetValue(_moveSpeedType) : 10f;
+            float currentSpeed = _statHandler != null ? _statHandler.GetStatValue(_moveSpeedType) : 10f;
             
             // 공격 중에는 이동 속도 대폭 감소 (0.2배)
             if (_combat != null && _combat.IsAttacking)
@@ -145,6 +149,11 @@ namespace Pluto.Actors
 
             // 입력 벡터를 3D 공간으로 변환
             Vector3 targetVelocity = new Vector3(_moveInput.x, 0, _moveInput.y).normalized * currentSpeed;
+            
+            if (_moveInput.sqrMagnitude > 0.01f)
+            {
+                Debug.Log($"[Pluto] Moving: Speed={currentSpeed}, Input={_moveInput}, TargetVel={targetVelocity}");
+            }
             
             // Rigidbody 리니어 속도 직접 제어
             Rb.linearVelocity = new Vector3(targetVelocity.x, Rb.linearVelocity.y, targetVelocity.z);

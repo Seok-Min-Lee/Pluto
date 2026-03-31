@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da34147a4ed32b842913828661e0fb29, type: 3}
+  m_Name: BaseStat_Player
+  m_EditorClassIdentifier: Assembly-CSharp::Pluto.Core.BaseStatData
+  MaxHp: 100
+  MoveSpeed: 8
+  DashRange: 3.5
+  AttackPower: 20
+  AttackSpeed: 1
+  CriticalChance: 0.05
+  CriticalDamage: 2
+  MaxCallGauge: 100
+  MaxCastCount: 1
+  ExtraWeights: []

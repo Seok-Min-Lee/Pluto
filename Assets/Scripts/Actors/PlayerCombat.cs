@@ -68,6 +68,30 @@ namespace Pluto.Actors
         }
 
         /// <summary>
+        /// Input System의 Call 액션 이벤트 핸들러. (R 키)
+        /// </summary>
+        public void OnCall(InputValue value)
+        {
+            if (value.isPressed)
+            {
+                Debug.Log("<color=yellow>[Pluto Combat]</color> <b>Divine Aid (Call) Requested! (R)</b>");
+                // TODO: BoonHandler를 통해 실제 신의 원조 효과 발동
+            }
+        }
+
+        /// <summary>
+        /// Input System의 Interact 액션 이벤트 핸들러. (E 키)
+        /// </summary>
+        public void OnInteract(InputValue value)
+        {
+            if (value.isPressed)
+            {
+                Debug.Log("<color=green>[Pluto Combat]</color> <b>Interact Requested! (E)</b>");
+                // TODO: 근처의 상호작용 가능한 객체 탐색 및 실행
+            }
+        }
+
+        /// <summary>
         /// 공격 동작을 즉시 중단합니다. (대시 캔슬용)
         /// </summary>
         public void CancelAttack()
