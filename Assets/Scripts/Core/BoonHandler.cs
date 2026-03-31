@@ -25,10 +25,13 @@ namespace Pluto.Core
         /// </summary>
         public void EquipBoon(BoonData data)
         {
-            if (data == null) return;
+            if (data == null)
+            {
+                return;
+            }
 
             // 1. 기존 슬롯에 은혜가 있다면 StatHandler에서 해당 수치 제거
-            if (_activeBoons.TryGetValue(data.Slot, out var oldBoon))
+            if (_activeBoons.TryGetValue(data.Slot, out BoonInstance oldBoon))
             {
                 _statHandler.RemoveModifiersFromSource(oldBoon);
                 Debug.Log($"[BoonHandler] Replaced {oldBoon.Data.BoonName} with {data.BoonName}");
@@ -49,7 +52,7 @@ namespace Pluto.Core
         /// </summary>
         public void LevelUpBoon(BoonSlot slot)
         {
-            if (_activeBoons.TryGetValue(slot, out var boon))
+            if (_activeBoons.TryGetValue(slot, out BoonInstance boon))
             {
                 boon.LevelUp(_statHandler);
             }
@@ -60,7 +63,7 @@ namespace Pluto.Core
         /// </summary>
         public BoonInstance GetBoonInstance(BoonSlot slot)
         {
-            _activeBoons.TryGetValue(slot, out var instance);
+            _activeBoons.TryGetValue(slot, out BoonInstance instance);
             return instance;
         }
 
@@ -69,9 +72,12 @@ namespace Pluto.Core
         /// </summary>
         public bool HasBoon(string boonName)
         {
-            foreach (var boon in _activeBoons.Values)
+            foreach (BoonInstance boon in _activeBoons.Values)
             {
-                if (boon.Data.BoonName == boonName) return true;
+                if (boon.Data.BoonName == boonName)
+                {
+                    return true;
+                }
             }
             return false;
         }

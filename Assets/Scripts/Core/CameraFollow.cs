@@ -19,7 +19,10 @@ namespace Pluto.Core
 
         private void LateUpdate()
         {
-            if (target == null) return;
+            if (target == null)
+            {
+                return;
+            }
 
             // 목표 좌표 계산
             Vector3 targetPosition = target.position + offset;

@@ -38,14 +38,22 @@ namespace Pluto.Actors
             
             _currentDashCharges = _maxDashCharges;
 
+            if (_statHandler == null)
+            {
+                Debug.LogError("PlayerController: StatHandler component not found!");
+                return;
+            }
+
             if (_combat == null)
             {
-                Debug.LogWarning("PlayerController: PlayerCombat component not found!");
+                Debug.LogError("PlayerController: PlayerCombat component not found!");
+                return;
             }
 
             if (_mainCamera == null)
             {
                 Debug.LogError("PlayerController: Main Camera not found!");
+                return;
             }
         }
 
@@ -114,7 +122,10 @@ namespace Pluto.Actors
 
             // 이동 입력이 있으면 그 방향으로, 없으면 현재 보는 방향으로 대시
             Vector3 dashDir = new Vector3(_moveInput.x, 0, _moveInput.y).normalized;
-            if (dashDir == Vector3.zero) dashDir = transform.forward;
+            if (dashDir == Vector3.zero)
+            {
+                dashDir = transform.forward;
+            }
 
             float startTime = Time.time;
             while (Time.time < startTime + _dashDuration)
@@ -165,7 +176,10 @@ namespace Pluto.Actors
             bool isMousePressed = Mouse.current != null && Mouse.current.leftButton.isPressed;
             bool isAttacking = _combat != null && _combat.IsAttacking;
 
-            if (!isMousePressed && !isAttacking) return;
+            if (!isMousePressed && !isAttacking)
+            {
+                return;
+            }
 
             // 마우스 정보를 얻기 위해 레이캐스트 활용
             Vector2 mousePosition = Mouse.current.position.ReadValue();

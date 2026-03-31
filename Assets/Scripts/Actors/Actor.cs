@@ -31,7 +31,10 @@ namespace Pluto.Actors
         /// <param name="amount">데미지 양</param>
         public virtual void TakeDamage(float amount)
         {
-            if (IsInvincible) return;
+            if (IsInvincible)
+            {
+                return;
+            }
 
             Debug.Log($"{gameObject.name} took {amount} damage.");
         }

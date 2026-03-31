@@ -30,9 +30,12 @@ namespace Pluto.Core
         /// </summary>
         public void AddStatusEffect(StatusEffectData data)
         {
-            if (data == null) return;
+            if (data == null)
+            {
+                return;
+            }
 
-            if (_activeStatusMap.TryGetValue(data.EffectID, out var instance))
+            if (_activeStatusMap.TryGetValue(data.EffectID, out StatusInstance instance))
             {
                 // 이미 존재하면 갱신(지속시간 초기화 및 중첩 증가)
                 instance.Refresh();
@@ -54,14 +57,17 @@ namespace Pluto.Core
         {
             List<string> expiredIDs = null;
 
-            foreach (var kvp in _activeStatusMap)
+            foreach (KeyValuePair<string, StatusInstance> kvp in _activeStatusMap)
             {
-                var instance = kvp.Value;
+                StatusInstance instance = kvp.Value;
                 instance.Update(Time.deltaTime);
 
                 if (instance.IsFinished)
                 {
-                    if (expiredIDs == null) expiredIDs = new List<string>();
+                    if (expiredIDs == null)
+                    {
+                        expiredIDs = new List<string>();
+                    }
                     expiredIDs.Add(kvp.Key);
                 }
             }
@@ -69,7 +75,7 @@ namespace Pluto.Core
             // 만료된 효과 제거
             if (expiredIDs != null)
             {
-                foreach (var id in expiredIDs)
+                foreach (string id in expiredIDs)
                 {
                     RemoveStatusEffect(id);
                 }
@@ -78,7 +84,7 @@ namespace Pluto.Core
 
         private void RemoveStatusEffect(string id)
         {
-            if (_activeStatusMap.TryGetValue(id, out var instance))
+            if (_activeStatusMap.TryGetValue(id, out StatusInstance instance))
             {
                 instance.Clear(_statHandler);
                 _activeStatusMap.Remove(id);
@@ -91,14 +97,25 @@ namespace Pluto.Core
         /// </summary>
         public void ClearAllStatusEffects()
         {
-            foreach (var instance in _activeStatusMap.Values)
+            foreach (StatusInstance instance in _activeStatusMap.Values)
             {
                 instance.Clear(_statHandler);
             }
             _activeStatusMap.Clear();
         }
 
-        public bool HasStatus(string id) => _activeStatusMap.ContainsKey(id);
-        public StatusInstance GetStatus(string id) => _activeStatusMap.TryGetValue(id, out var instance) ? instance : null;
+        public bool HasStatus(string id)
+        {
+            return _activeStatusMap.ContainsKey(id);
+        }
+
+        public StatusInstance GetStatus(string id)
+        {
+            if (_activeStatusMap.TryGetValue(id, out StatusInstance instance))
+            {
+                return instance;
+            }
+            return null;
+        }
     }
 }

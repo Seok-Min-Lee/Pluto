@@ -58,8 +58,22 @@ namespace Pluto.Core
         {
             get
             {
-                float additiveSum = _modifiers.Where(m => m.Type == ModifierType.Additive).Sum(m => m.Value);
-                float multiplierSum = _modifiers.Where(m => m.Type == ModifierType.Multiplier).Sum(m => m.Value);
+                float additiveSum = 0f;
+                float multiplierSum = 0f;
+
+                for (int i = 0; i < _modifiers.Count; i++)
+                {
+                    StatModifier mod = _modifiers[i];
+                    if (mod.Type == ModifierType.Additive)
+                    {
+                        additiveSum += mod.Value;
+                    }
+                    else if (mod.Type == ModifierType.Multiplier)
+                    {
+                        multiplierSum += mod.Value;
+                    }
+                }
+
                 // 공식: (기본치 + 합산치) * (1 + 배율치)
                 return (BaseValue + additiveSum) * (1 + multiplierSum);
             }
@@ -75,11 +89,14 @@ namespace Pluto.Core
         private Dictionary<string, float> _extraAttributes = new Dictionary<string, float>();
 
         // 초기화 시 정적 데이터 로드전까지 사용할 기본 데이터 에셋
-        [SerializeField] private BaseStatData defaultBaseData;
+        [SerializeField] private BaseStatData _defaultBaseData;
 
         private void Awake()
         {
-            if (defaultBaseData != null) Initialize(defaultBaseData);
+            if (_defaultBaseData != null)
+            {
+                Initialize(_defaultBaseData);
+            }
         }
 
         /// <summary>
@@ -100,7 +117,7 @@ namespace Pluto.Core
 
             // 추가 속성 가중치 로드 (Extra Attributes)
             _extraAttributes.Clear();
-            foreach (var extra in data.ExtraWeights)
+            foreach (StatExtraWeight extra in data.ExtraWeights)
             {
                 _extraAttributes[extra.Tag] = extra.Value;
             }
@@ -111,17 +128,38 @@ namespace Pluto.Core
             _coreStatMap[type] = new CoreStat { Type = type, BaseValue = baseVal };
         }
 
-        public float GetStatValue(StatType type) => _coreStatMap.TryGetValue(type, out var stat) ? stat.FinalValue : 0f;
-        public float GetAttributeValue(string tag) => _extraAttributes.TryGetValue(tag, out var val) ? val : 0f;
+        public float GetStatValue(StatType type)
+        {
+            if (_coreStatMap.TryGetValue(type, out CoreStat stat))
+            {
+                return stat.FinalValue;
+            }
+            return 0f;
+        }
+
+        public float GetAttributeValue(string tag)
+        {
+            if (_extraAttributes.TryGetValue(tag, out float val))
+            {
+                return val;
+            }
+            return 0f;
+        }
 
         public void AddModifier(StatType type, StatModifier mod)
         {
-            if (_coreStatMap.TryGetValue(type, out var stat)) stat.AddModifier(mod);
+            if (_coreStatMap.TryGetValue(type, out CoreStat stat))
+            {
+                stat.AddModifier(mod);
+            }
         }
 
         public void RemoveModifiersFromSource(object source)
         {
-            foreach (var stat in _coreStatMap.Values) stat.RemoveModifiersFromSource(source);
+            foreach (CoreStat stat in _coreStatMap.Values)
+            {
+                stat.RemoveModifiersFromSource(source);
+            }
         }
 
         /// <summary>

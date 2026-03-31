@@ -46,7 +46,7 @@ namespace Pluto.Actors
         }
 
         /// <summary>
-        /// Input System의 Special 액션 이벤트 핸들러. (Q 키)
+        /// Input System의 Special 액션 이벤트 핸들러. (마우스 오른쪽)
         /// </summary>
         public void OnSpecial(InputValue value)
         {
@@ -57,7 +57,7 @@ namespace Pluto.Actors
         }
 
         /// <summary>
-        /// Input System의 Magic 액션 이벤트 핸들러. (마우스 오른쪽)
+        /// Input System의 Magic 액션 이벤트 핸들러. (Q 키)
         /// </summary>
         public void OnMagic(InputValue value)
         {
@@ -96,7 +96,10 @@ namespace Pluto.Actors
         /// </summary>
         public void CancelAttack()
         {
-            if (!_isAttacking) return;
+            if (!_isAttacking)
+            {
+                return;
+            }
             
             StopAllCoroutines();
             _isAttacking = false;
@@ -128,7 +131,10 @@ namespace Pluto.Actors
             }
 
             _comboIndex++;
-            if (_comboIndex > 3) _comboIndex = 1;
+            if (_comboIndex > 3)
+            {
+                _comboIndex = 1;
+            }
 
             Debug.Log($"<color=red>[Pluto Combat]</color> Attack Phase: <b>{_comboIndex}</b>");
             _lastAttackTime = Time.time;
@@ -152,7 +158,7 @@ namespace Pluto.Actors
         private IEnumerator SpecialAttackCoroutine()
         {
             _isAttacking = true;
-            Debug.Log("<color=orange>[Pluto Combat]</color> <b>Special Attack! (Q)</b>");
+            Debug.Log("<color=orange>[Pluto Combat]</color> <b>Special Attack! (Mouse Right)</b>");
 
             Vector3 attackDir = transform.forward;
             _rb.linearVelocity = attackDir * _specialMicroDashForce;
@@ -164,7 +170,7 @@ namespace Pluto.Actors
         private IEnumerator MagicAttackCoroutine()
         {
             _isAttacking = true;
-            Debug.Log("<color=cyan>[Pluto Combat]</color> <b>Magic Cast! (Right Click)</b>");
+            Debug.Log("<color=cyan>[Pluto Combat]</color> <b>Magic Cast! (Q)</b>");
 
             Vector3 attackDir = transform.forward;
             _rb.linearVelocity = attackDir * _magicMicroDashForce;

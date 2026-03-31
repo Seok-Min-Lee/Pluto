@@ -59,7 +59,7 @@ namespace Pluto.Core
             handler.AddModifier(Data.TargetStat, _currentModifier);
 
             // 추가 태그 속성(Exposed 등) 업데이트
-            foreach (var extra in Data.ExtraAttributes)
+            foreach (BoonExtraAttribute extra in Data.ExtraAttributes)
             {
                 handler.SetAttribute(extra.Tag, extra.Value);
             }

@@ -62,7 +62,10 @@ namespace Pluto.Core
         /// </summary>
         public void ApplyToHandler(StatHandler handler)
         {
-            if (Data.TargetStat == default && Data.StatValuePerStack == 0) return;
+            if (Data.TargetStat == default && Data.StatValuePerStack == 0)
+            {
+                return;
+            }
 
             handler.RemoveModifiersFromSource(this);
             
