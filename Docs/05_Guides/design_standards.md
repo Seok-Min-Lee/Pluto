@@ -11,7 +11,7 @@
 - **표준 비율:** **1 Unit = 100 Pixels**
 - **캐릭터 크기:** 약 0.8~1.2 Units (신장에 비례)
 - **이동 속도:**
-    - `Stat_MoveSpeed`: 기본 500 (초당 5 Units 이동)
+    - `Stat_MoveSpeed`: 기본 8 (초당 8 Units 이동)
     - `Stat_DashSpeed`: 기본 1500 (순간 가속)
 
 ---

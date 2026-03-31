@@ -13,7 +13,7 @@ namespace Pluto.Core
     {
         [Header("기초 물리량 (Core Stats)")]
         public float MaxHp = 100f;
-        public float MoveSpeed = 500f;
+        public float MoveSpeed = 8f;
         public float DashRange = 3.5f;
 
         [Header("전투 지표 (Combat Stats)")]
