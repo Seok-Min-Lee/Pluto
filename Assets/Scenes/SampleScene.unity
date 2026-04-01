@@ -558,7 +558,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &659769866
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -615,7 +615,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6bf1181634cb1e6498901e460bb28631, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Pluto.Core.StatHandler
-  defaultBaseData: {fileID: 11400000, guid: aa60347843e051f4d8475778f39fe575, type: 2}
+  _defaultBaseData: {fileID: 0}
 --- !u!23 &659769870
 MeshRenderer:
   m_ObjectHideFlags: 0
