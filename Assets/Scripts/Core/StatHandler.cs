@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -117,7 +117,7 @@ namespace Pluto.Core
 
             // 추가 속성 가중치 로드 (Extra Attributes)
             _extraAttributes.Clear();
-            foreach (StatExtraWeight extra in data.ExtraWeights)
+            foreach (StatEntry extra in data.ExtraWeights)
             {
                 _extraAttributes[extra.Tag] = extra.Value;
             }
