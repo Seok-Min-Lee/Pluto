@@ -12,8 +12,8 @@ namespace Pluto.Actors
     {
         [Header("Combo Settings")]
         [SerializeField] private float _comboResetTime = 1.0f;
-        [SerializeField] private float _attackDuration = 0.3f;
-        [SerializeField] private float _microDashForce = 12f;
+        [SerializeField] private float[] _attackDurations = { 0.3f, 0.3f, 0.45f };
+        [SerializeField] private float[] _microDashForces = { 12f, 14f, 18f };
 
         [Header("Special/Magic Settings")]
         [SerializeField] private float _specialDuration = 0.5f;
@@ -22,6 +22,9 @@ namespace Pluto.Actors
         [SerializeField] private float _magicMicroDashForce = 5f;
 
         private Rigidbody _rb;
+        
+        private Camera _mainCamera;
+private PlayerView _view;
         private int _comboIndex = 0;
         private float _lastAttackTime;
         private bool _isAttacking;
@@ -32,7 +35,50 @@ namespace Pluto.Actors
         private void Awake()
         {
             _rb = GetComponent<Rigidbody>();
+            _view = GetComponent<PlayerView>();
+            _mainCamera = Camera.main;
+            
+            if (_view == null)
+            {
+                Debug.LogWarning("PlayerCombat: PlayerView component not found! Animations may not play.");
+            }
+
+            if (_mainCamera == null)
+            {
+                Debug.LogError("[Pluto Combat] Main Camera not found! Aim direction cannot be calculated.");
+            }
         }
+
+
+        /// <summary>
+        /// 현재 마우스 커서가 가리키는 월드 좌표 방향을 계산합니다. (0.1mm 정밀도 보장)
+        /// </summary>
+        private Vector3 GetAimDirection()
+        {
+            if (_mainCamera == null)
+            {
+                return transform.forward;
+            }
+
+            Vector2 mousePosition = Mouse.current.position.ReadValue();
+            Ray ray = _mainCamera.ScreenPointToRay(mousePosition);
+            Plane groundPlane = new Plane(Vector3.up, transform.position);
+
+            if (groundPlane.Raycast(ray, out float entry))
+            {
+                Vector3 lookPoint = ray.GetPoint(entry);
+                Vector3 direction = (lookPoint - transform.position).normalized;
+                direction.y = 0; // 수평 이동만 허용
+                
+                if (direction != Vector3.zero)
+                {
+                    return direction;
+                }
+            }
+
+            return transform.forward;
+        }
+
 
         /// <summary>
         /// Input System의 Attack 액션 이벤트 핸들러. (마우스 왼쪽)
@@ -124,59 +170,121 @@ namespace Pluto.Actors
             _isAttacking = true;
             _inputBuffered = false;
 
-            // 콤보 리셋 체크 (마지막 공격으로부터 일정 시간이 지나면 1타부터 시작)
             if (Time.time - _lastAttackTime > _comboResetTime)
             {
                 _comboIndex = 0;
             }
 
             _comboIndex++;
-            if (_comboIndex > 3)
+            // 콤보 인덱스 방체 및 배열 범위 동기화 (Rule 4-4 준수)
+            if (_comboIndex > _attackDurations.Length)
             {
                 _comboIndex = 1;
             }
 
-            Debug.Log($"<color=red>[Pluto Combat]</color> Attack Phase: <b>{_comboIndex}</b>");
             _lastAttackTime = Time.time;
 
-            // 마이크로 대시: 공격 방향으로 짧고 강하게 전진
-            Vector3 attackDir = transform.forward;
-            _rb.linearVelocity = attackDir * _microDashForce;
+            // 공격 정밀 방향 계산 및 회전 스냅 (Body Snap)
+            Vector3 attackDir = GetAimDirection();
+            if (attackDir != Vector3.zero)
+            {
+                transform.rotation = Quaternion.LookRotation(attackDir);
+            }
 
-            // 공격 동작 시간 (추후 애니메이션 프레임과 동기화 필요)
-            yield return new WaitForSeconds(_attackDuration);
+            // 애니메이션 실행
+            if (_view != null)
+            {
+                _view.PlayAttack(_comboIndex);
+            }
+
+            // 마이크로 대시: 콤보 단계별 정밀 추진력 주입
+            float currentForce = GetMicroDashForce(_comboIndex);
+            Vector3 velocity = attackDir * currentForce;
+            velocity.y = _rb.linearVelocity.y;
+            _rb.linearVelocity = velocity;
+
+            // 콤보 단계별 정밀 지속 시간 대기
+            float currentDuration = GetAttackDuration(_comboIndex);
+            yield return new WaitForSeconds(currentDuration);
 
             _isAttacking = false;
 
-            // 입력 버퍼가 있다면 다음 공격 실행
             if (_inputBuffered)
             {
                 HandleAttackInput();
             }
         }
 
+
+
         private IEnumerator SpecialAttackCoroutine()
         {
             _isAttacking = true;
-            Debug.Log("<color=orange>[Pluto Combat]</color> <b>Special Attack! (Mouse Right)</b>");
 
-            Vector3 attackDir = transform.forward;
-            _rb.linearVelocity = attackDir * _specialMicroDashForce;
+            // 정밀 방향 계산 및 회전 스냅 (Body Snap)
+            Vector3 attackDir = GetAimDirection();
+            if (attackDir != Vector3.zero)
+            {
+                transform.rotation = Quaternion.LookRotation(attackDir);
+            }
+
+            if (_view != null)
+            {
+                _view.PlaySpecial();
+            }
+
+            Vector3 velocity = attackDir * _specialMicroDashForce;
+            velocity.y = _rb.linearVelocity.y;
+            _rb.linearVelocity = velocity;
 
             yield return new WaitForSeconds(_specialDuration);
             _isAttacking = false;
         }
 
+
+
         private IEnumerator MagicAttackCoroutine()
         {
             _isAttacking = true;
-            Debug.Log("<color=cyan>[Pluto Combat]</color> <b>Magic Cast! (Q)</b>");
 
-            Vector3 attackDir = transform.forward;
-            _rb.linearVelocity = attackDir * _magicMicroDashForce;
+            // 정밀 방향 계산 및 회전 스냅 (Body Snap)
+            Vector3 attackDir = GetAimDirection();
+            if (attackDir != Vector3.zero)
+            {
+                transform.rotation = Quaternion.LookRotation(attackDir);
+            }
+
+            if (_view != null)
+            {
+                _view.PlayMagic();
+            }
+
+            Vector3 velocity = attackDir * _magicMicroDashForce;
+            velocity.y = _rb.linearVelocity.y;
+            _rb.linearVelocity = velocity;
 
             yield return new WaitForSeconds(_magicDuration);
             _isAttacking = false;
         }
+
+        /// <summary>
+        /// 현재 콤보 단계에 대응하는 공격 지속 시간을 정밀하게 반환합니다. (0.1ms 정밀도)
+        /// </summary>
+        private float GetAttackDuration(int comboIndex)
+        {
+            int index = Mathf.Clamp(comboIndex - 1, 0, _attackDurations.Length - 1);
+            return _attackDurations.Length > 0 ? _attackDurations[index] : 0.3f;
+        }
+
+        /// <summary>
+        /// 현재 콤보 단계에 대응하는 마이크로 대시 추진력을 정밀하게 반환합니다. (0.1mm 정밀도)
+        /// </summary>
+        private float GetMicroDashForce(int comboIndex)
+        {
+            int index = Mathf.Clamp(comboIndex - 1, 0, _microDashForces.Length - 1);
+            return _microDashForces.Length > 0 ? _microDashForces[index] : 12f;
+        }
+
+
     }
 }

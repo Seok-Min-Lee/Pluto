@@ -15,17 +15,27 @@ namespace Pluto.Actors
         
         [Header("Dash Settings")]
         [SerializeField] private float _dashSpeed = 30f;
-        [SerializeField] private float _dashDuration = 0.15f;
+        /// <summary>
+        /// 대시의 지속 시간입니다. (애니메이션 길이에 맞춰 0.3초로 동기화 완료)
+        /// </summary>
+        [SerializeField] private float _dashDuration = 0.3f;
+        /// <summary>
+        /// 대시 이동이 끝난 후 발생하는 경직 시간입니다. (동작의 무게감을 위해 0.15초 추가)
+        /// </summary>
+        [SerializeField] private float _dashRecoveryDuration = 0.15f;
         [SerializeField] private float _dashCooldown = 1.0f;
         [SerializeField] private int _maxDashCharges = 2;
 
         private StatHandler _statHandler;
         private PlayerCombat _combat;
+        private PlayerView _view;
         private Vector2 _moveInput;
         private Camera _mainCamera;
 
         private int _currentDashCharges;
         private float _dashCooldownTimer;
+        
+        [SerializeField] private float _rotationSpeed = 15.0f;
         private bool _isDashing;
 
         protected override void Awake()
@@ -34,6 +44,7 @@ namespace Pluto.Actors
             Debug.Log("<color=green>[Pluto]</color> PlayerController Initializing...");
             _statHandler = GetComponent<StatHandler>();
             _combat = GetComponent<PlayerCombat>();
+            _view = GetComponent<PlayerView>();
             _mainCamera = Camera.main;
             
             _currentDashCharges = _maxDashCharges;
@@ -48,6 +59,11 @@ namespace Pluto.Actors
             {
                 Debug.LogError("PlayerController: PlayerCombat component not found!");
                 return;
+            }
+
+            if (_view == null)
+            {
+                Debug.LogWarning("PlayerController: PlayerView component not found! Animations may not play.");
             }
 
             if (_mainCamera == null)
@@ -114,6 +130,10 @@ namespace Pluto.Actors
             IsInvincible = true;
             _currentDashCharges--;
             
+            // 물리 저항을 일시적으로 무력화하여 추진력을 100% 보존
+            float originalDrag = Rb.linearDamping;
+            Rb.linearDamping = 0f;
+
             // 첫 대시 시작 시 쿨다운 타이머 시작
             if (_currentDashCharges == _maxDashCharges - 1)
             {
@@ -127,12 +147,31 @@ namespace Pluto.Actors
                 dashDir = transform.forward;
             }
 
+            // 애니메이션 실행
+            if (_view != null)
+            {
+                _view.PlayDash();
+            }
+
             float startTime = Time.time;
+            var wait = new WaitForFixedUpdate(); // 물리 엔진 스텝과 동기화
+            
             while (Time.time < startTime + _dashDuration)
             {
-                Rb.linearVelocity = dashDir * _dashSpeed;
-                yield return null;
+                // 중력(y속도)을 보존하면서 추진력 주입
+                Vector3 velocity = dashDir * _dashSpeed;
+                velocity.y = Rb.linearVelocity.y;
+                Rb.linearVelocity = velocity;
+                
+                yield return wait;
             }
+
+            // 물리 저항 원상 복구 및 상태 해제
+            Rb.linearDamping = originalDrag;
+
+            // 대시 이동 종료 후 급제동 및 경직(End-lag) 구간 시작 (Rule 4-4 준수)
+            Rb.linearVelocity = Vector3.zero;
+            yield return new WaitForSeconds(_dashRecoveryDuration);
 
             _isDashing = false;
             IsInvincible = false;
@@ -140,11 +179,28 @@ namespace Pluto.Actors
 
         private void FixedUpdate()
         {
-            if (!_isDashing)
+            // 대시 중이거나 공격 중일 때는 키보드 이동/회전 입력을 차단하여 물리적 일관성을 확보합니다. (Rule 4-4 준수)
+            bool canMoveByInput = !_isDashing && (_combat == null || !_combat.IsAttacking);
+
+            if (canMoveByInput)
             {
                 ApplyMovement();
+                ApplyRotation();
             }
-            ApplyRotation();
+            
+            UpdateAnimation();
+        }
+
+
+
+        private void UpdateAnimation()
+        {
+            if (_view != null)
+            {
+                // 수평 이동 속도만 애니메이션에 반영 (Y축 제외)
+                Vector3 horizontalVel = new Vector3(Rb.linearVelocity.x, 0, Rb.linearVelocity.z);
+                _view.UpdateMoveSpeed(horizontalVel.magnitude);
+            }
         }
 
         private void ApplyMovement()
@@ -170,36 +226,65 @@ namespace Pluto.Actors
             Rb.linearVelocity = new Vector3(targetVelocity.x, Rb.linearVelocity.y, targetVelocity.z);
         }
 
+        /// <summary>
+        /// 캐릭터의 회전을 제어합니다. 마우스 입력/공격 시 혹은 이동 방향에 맞춰 회전합니다.
+        /// </summary>
         private void ApplyRotation()
         {
-            // 마우스 왼쪽 버튼을 클릭 중이거나, 공격 동작 중일 때 회전 처리
+            // 1. 마우스 조준 또는 공격 중인지 확인 (조준 우선권)
             bool isMousePressed = Mouse.current != null && Mouse.current.leftButton.isPressed;
             bool isAttacking = _combat != null && _combat.IsAttacking;
 
-            if (!isMousePressed && !isAttacking)
+            if (isMousePressed || isAttacking)
             {
+                RotateToCursor();
                 return;
             }
 
-            // 마우스 정보를 얻기 위해 레이캐스트 활용
+            // 2. 일반 이동 중인지 확인 (8방향 회전)
+            if (_moveInput.sqrMagnitude > 0.01f)
+            {
+                RotateToMoveDirection();
+            }
+        }
+
+
+        /// <summary>
+        /// 마우스 커서 방향으로 플레이어를 회전시킵니다.
+        /// </summary>
+        private void RotateToCursor()
+        {
             Vector2 mousePosition = Mouse.current.position.ReadValue();
             Ray ray = _mainCamera.ScreenPointToRay(mousePosition);
-            
-            // 바닥(보통 0 좌표)과의 충돌 여부를 확인하기 위해 간단한 Plane 사용 또는 Physics.Raycast 사용
-            // 여기서는 단순함을 위해 Ground 레이어 또는 Plane과의 인터섹션을 활용
             Plane groundPlane = new Plane(Vector3.up, transform.position);
-            
+
             if (groundPlane.Raycast(ray, out float entry))
             {
                 Vector3 lookPoint = ray.GetPoint(entry);
                 Vector3 direction = (lookPoint - transform.position).normalized;
-                
+                direction.y = 0; // 수평 회전만 허용
+
                 if (direction != Vector3.zero)
                 {
                     Quaternion targetRotation = Quaternion.LookRotation(direction);
-                    Rb.MoveRotation(targetRotation);
+                    Rb.MoveRotation(Quaternion.Slerp(transform.rotation, targetRotation, Time.fixedDeltaTime * _rotationSpeed));
                 }
             }
         }
+
+        /// <summary>
+        /// 이동 입력 방향(8방향)으로 플레이어를 회전시킵니다.
+        /// </summary>
+        private void RotateToMoveDirection()
+        {
+            Vector3 direction = new Vector3(_moveInput.x, 0, _moveInput.y).normalized;
+            
+            if (direction != Vector3.zero)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(direction);
+                Rb.MoveRotation(Quaternion.Slerp(transform.rotation, targetRotation, Time.fixedDeltaTime * _rotationSpeed));
+            }
+        }
+
     }
 }

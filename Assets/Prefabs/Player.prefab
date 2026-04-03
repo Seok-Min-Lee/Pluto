@@ -59,5 +59,170 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ba5c38e67e7ab414cb6ba3eb4ec654e3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4559840416156779768}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ba5c38e67e7ab414cb6ba3eb4ec654e3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2174708173714042323}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ba5c38e67e7ab414cb6ba3eb4ec654e3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8564933418371028350}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ba5c38e67e7ab414cb6ba3eb4ec654e3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2869889482255232001}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ba5c38e67e7ab414cb6ba3eb4ec654e3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5634977431817961923}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ba5c38e67e7ab414cb6ba3eb4ec654e3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6060552908503094692}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ba5c38e67e7ab414cb6ba3eb4ec654e3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2936895497340977141}
   m_SourcePrefab: {fileID: 100100000, guid: ba5c38e67e7ab414cb6ba3eb4ec654e3, type: 3}
+--- !u!1 &7242374778995386618 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: ba5c38e67e7ab414cb6ba3eb4ec654e3, type: 3}
+  m_PrefabInstance: {fileID: 7512985683779753387}
+  m_PrefabAsset: {fileID: 0}
+--- !u!54 &4559840416156779768
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7242374778995386618}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
+--- !u!65 &2174708173714042323
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7242374778995386618}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1.8, z: 1}
+  m_Center: {x: 0, y: 0.9, z: 0}
+--- !u!114 &8564933418371028350
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7242374778995386618}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56617b1d719a7d343afcf613a34ae786, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Pluto.Actors.PlayerController
+  _moveSpeedType: 1
+  _dashSpeed: 30
+  _dashDuration: 0.15
+  _dashCooldown: 1
+  _maxDashCharges: 2
+--- !u!114 &2869889482255232001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7242374778995386618}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 447b91bcfc0adb3468099cf32026ce34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Pluto.Actors.PlayerCombat
+  _comboResetTime: 1
+  _attackDuration: 0.3
+  _microDashForce: 12
+  _specialDuration: 0.5
+  _specialMicroDashForce: 18
+  _magicDuration: 0.2
+  _magicMicroDashForce: 5
+--- !u!114 &5634977431817961923
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7242374778995386618}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ad3064c649615e459465330da62ce71, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Pluto.Actors.PlayerView
+--- !u!114 &6060552908503094692
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7242374778995386618}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6bf1181634cb1e6498901e460bb28631, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Pluto.Core.StatHandler
+  _defaultBaseData: {fileID: 11400000, guid: aa60347843e051f4d8475778f39fe575, type: 2}
+--- !u!114 &2936895497340977141
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7242374778995386618}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62899f850307741f2a39c98a8b639597, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.PlayerInput
+  m_Actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  m_NotificationBehavior: 0
+  m_UIInputModule: {fileID: 0}
+  m_DeviceLostEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_DeviceRegainedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_ControlsChangedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_ActionEvents: []
+  m_NeverAutoSwitchControlSchemes: 0
+  m_DefaultControlScheme: 
+  m_DefaultActionMap: 
+  m_SplitScreenIndex: -1
+  m_Camera: {fileID: 0}
