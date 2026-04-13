@@ -5,8 +5,7 @@ using UnityEngine.InputSystem;
 namespace Pluto.Actors
 {
     /// <summary>
-    /// 플레이어의 공격 시스템을 담당하는 클래스.
-    /// 3단 콤보와 입력 버퍼링, 마이크로 대시 기능을 제공합니다.
+    /// 공격 데이터 구조체 (콤보 및 특수 공격 설정용)
     /// </summary>
     [System.Serializable]
     public struct AttackData
@@ -16,6 +15,9 @@ namespace Pluto.Actors
         public float RecoveryDuration;
     }
 
+    /// <summary>
+    /// 플레이어 공격 시스템 관리 클래스
+    /// </summary>
     public class PlayerCombat : MonoBehaviour
     {
         [Header("Combo Settings")]
@@ -34,17 +36,19 @@ namespace Pluto.Actors
         private Rigidbody _rb;
         private Camera _mainCamera;
         private PlayerView _view;
-        private PlayerController _controller; // 이동 입력 감지용 레퍼런스 추가
+        private PlayerController _controller;
         private int _comboIndex = 0;
         private float _lastAttackTime;
         private bool _isAttacking;
         private bool _inputBuffered;
 
-        // 조작 임계값 상수화 (Rule 3-2 준수)
         private const float RecoveryCancelThreshold = 0.1f;
 
         public bool IsAttacking => _isAttacking;
 
+        /// <summary>
+        /// 주요 컴포넌트 참조 초기화
+        /// </summary>
         private void Awake()
         {
             _rb = GetComponent<Rigidbody>();
@@ -68,9 +72,8 @@ namespace Pluto.Actors
             }
         }
 
-
         /// <summary>
-        /// 현재 마우스 커서가 가리키는 월드 좌표 방향을 계산합니다. (0.1mm 정밀도 보장)
+        /// 마우스 커서 위치 기반 조준 방향 계산
         /// </summary>
         private Vector3 GetAimDirection()
         {
@@ -87,7 +90,7 @@ namespace Pluto.Actors
             {
                 Vector3 lookPoint = ray.GetPoint(entry);
                 Vector3 direction = (lookPoint - transform.position).normalized;
-                direction.y = 0; // 수평 이동만 허용
+                direction.y = 0;
                 
                 if (direction != Vector3.zero)
                 {
@@ -98,9 +101,8 @@ namespace Pluto.Actors
             return transform.forward;
         }
 
-
         /// <summary>
-        /// Input System의 Attack 액션 이벤트 핸들러. (마우스 왼쪽)
+        /// Input System 일반 공격(마우스 왼쪽) 이벤트 핸들러
         /// </summary>
         public void OnAttack(InputValue value)
         {
@@ -111,7 +113,7 @@ namespace Pluto.Actors
         }
 
         /// <summary>
-        /// Input System의 Special 액션 이벤트 핸들러. (마우스 오른쪽)
+        /// Input System 특수 공격(마우스 오른쪽) 이벤트 핸들러
         /// </summary>
         public void OnSpecial(InputValue value)
         {
@@ -122,7 +124,7 @@ namespace Pluto.Actors
         }
 
         /// <summary>
-        /// Input System의 Magic 액션 이벤트 핸들러. (Q 키)
+        /// Input System 매직 공격(Q) 이벤트 핸들러
         /// </summary>
         public void OnMagic(InputValue value)
         {
@@ -133,7 +135,7 @@ namespace Pluto.Actors
         }
 
         /// <summary>
-        /// Input System의 Call 액션 이벤트 핸들러. (R 키)
+        /// Input System 신성 원조(R) 이벤트 핸들러
         /// </summary>
         public void OnCall(InputValue value)
         {
@@ -145,7 +147,7 @@ namespace Pluto.Actors
         }
 
         /// <summary>
-        /// Input System의 Interact 액션 이벤트 핸들러. (E 키)
+        /// Input System 상호작용(E) 이벤트 핸들러
         /// </summary>
         public void OnInteract(InputValue value)
         {
@@ -157,7 +159,7 @@ namespace Pluto.Actors
         }
 
         /// <summary>
-        /// 공격 동작을 즉시 중단합니다. (대시 캔슬용)
+        /// 공격 동작 즉시 중단 및 상태 리셋
         /// </summary>
         public void CancelAttack()
         {
@@ -169,23 +171,24 @@ namespace Pluto.Actors
             StopAllCoroutines();
             _isAttacking = false;
             _inputBuffered = false;
-            Debug.Log("<color=yellow>[Pluto Combat]</color> Attack Cancelled!");
         }
 
         private void HandleAttackInput()
         {
             if (_isAttacking)
             {
-                // 공격 중 입력이 들어오면 버퍼에 저장
                 _inputBuffered = true;
                 return;
             }
-
             StartCoroutine(AttackCoroutine());
         }
 
-private IEnumerator AttackCoroutine()
+        /// <summary>
+        /// 콤보 공격 프로세스 코루틴
+        /// </summary>
+        private IEnumerator AttackCoroutine()
         {
+            // 1. 공격 상태 시작 및 콤보 정보 갱신
             _isAttacking = true;
             _inputBuffered = false;
 
@@ -203,6 +206,7 @@ private IEnumerator AttackCoroutine()
             _lastAttackTime = Time.time;
             AttackData currentAttack = _comboAttacks[_comboIndex - 1];
 
+            // 2. 조준 방향 기준 회전 스냅
             Vector3 attackDir = GetAimDirection();
             if (attackDir != Vector3.zero)
             {
@@ -214,15 +218,16 @@ private IEnumerator AttackCoroutine()
                 _view.PlayAttack(_comboIndex);
             }
 
-            // [원복] 1회성 속입 주입 및 WaitForSeconds 대기 방식으로 원상 복구
-            Vector3 velocity = attackDir * currentAttack.DashForce;
-            velocity.y = _rb.linearVelocity.y;
-            _rb.linearVelocity = velocity;
+            // 3. 통합 메서드를 이용한 마이크로 대시 수행
+            if (_controller != null) 
+            {   
+                _controller.SetLinearVelocity(attackDir, currentAttack.DashForce);
+            }
 
-            // 공격 액션 구간 온전 대기
+            // 4. 공격 액션 지속 시간 대기
             yield return new WaitForSeconds(currentAttack.Duration);
 
-            // 5. 복구 구간 진입 및 입력 감지 루프
+            // 5. 복구(Recovery) 구간 진입 및 입력 버퍼링 감지
             int recState = _comboIndex == 1 ? PlayerView.AttackARecState : PlayerView.AttackBRecState;
             if (_comboIndex < 3 && _view != null)
             {
@@ -241,6 +246,7 @@ private IEnumerator AttackCoroutine()
                 yield return null;
             }
 
+            // 6. 상태 종료 및 연쇄 공격 처리
             _isAttacking = false;
 
             if (_comboIndex == _comboAttacks.Length)
@@ -251,11 +257,12 @@ private IEnumerator AttackCoroutine()
             if (_inputBuffered)
             {
                 HandleAttackInput();
-            }
+        }
         }
 
-
-
+        /// <summary>
+        /// 특수 공격 프로세스 코루틴
+        /// </summary>
         private IEnumerator SpecialAttackCoroutine()
         {
             _isAttacking = true;
@@ -271,9 +278,10 @@ private IEnumerator AttackCoroutine()
                 _view.PlaySpecial();
             }
 
-            Vector3 velocity = attackDir * _specialAttack.DashForce;
-            velocity.y = _rb.linearVelocity.y;
-            _rb.linearVelocity = velocity;
+            if (_controller != null)
+            {
+                _controller.SetLinearVelocity(attackDir, _specialAttack.DashForce);
+            }
 
             // 1. 공격 액션 구간 온전 대기
             yield return new WaitForSeconds(_specialAttack.Duration);
@@ -284,6 +292,9 @@ private IEnumerator AttackCoroutine()
             _isAttacking = false;
         }
 
+        /// <summary>
+        /// 매직 공격 프로세스 코루틴
+        /// </summary>
         private IEnumerator MagicAttackCoroutine()
         {
             _isAttacking = true;
@@ -299,9 +310,10 @@ private IEnumerator AttackCoroutine()
                 _view.PlayMagic();
             }
 
-            Vector3 velocity = attackDir * _magicAttack.DashForce;
-            velocity.y = _rb.linearVelocity.y;
-            _rb.linearVelocity = velocity;
+            if (_controller != null)
+            {
+                _controller.SetLinearVelocity(attackDir, _magicAttack.DashForce);
+            }
 
             // 1. 공격 액션 구간 온전 대기
             yield return new WaitForSeconds(_magicAttack.Duration);
