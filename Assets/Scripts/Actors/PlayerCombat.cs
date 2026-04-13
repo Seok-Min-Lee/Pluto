@@ -8,27 +8,40 @@ namespace Pluto.Actors
     /// 플레이어의 공격 시스템을 담당하는 클래스.
     /// 3단 콤보와 입력 버퍼링, 마이크로 대시 기능을 제공합니다.
     /// </summary>
+    [System.Serializable]
+    public struct AttackData
+    {
+        public float Duration;
+        public float DashForce;
+        public float RecoveryDuration;
+    }
+
     public class PlayerCombat : MonoBehaviour
     {
         [Header("Combo Settings")]
         [SerializeField] private float _comboResetTime = 1.0f;
-        [SerializeField] private float[] _attackDurations = { 0.3f, 0.3f, 0.45f };
-        [SerializeField] private float[] _microDashForces = { 12f, 14f, 18f };
+        [SerializeField] private AttackData[] _comboAttacks = 
+        {
+            new AttackData { Duration = 0.3f, DashForce = 12f, RecoveryDuration = 0.15f },
+            new AttackData { Duration = 0.3f, DashForce = 14f, RecoveryDuration = 0.15f },
+            new AttackData { Duration = 0.45f, DashForce = 18f, RecoveryDuration = 0.2f }
+        };
 
         [Header("Special/Magic Settings")]
-        [SerializeField] private float _specialDuration = 0.5f;
-        [SerializeField] private float _specialMicroDashForce = 18f;
-        [SerializeField] private float _magicDuration = 0.2f;
-        [SerializeField] private float _magicMicroDashForce = 5f;
+        [SerializeField] private AttackData _specialAttack = new AttackData { Duration = 0.5f, DashForce = 18f, RecoveryDuration = 0.2f };
+        [SerializeField] private AttackData _magicAttack = new AttackData { Duration = 0.2f, DashForce = 5f, RecoveryDuration = 0.1f };
 
         private Rigidbody _rb;
-        
         private Camera _mainCamera;
-private PlayerView _view;
+        private PlayerView _view;
+        private PlayerController _controller; // 이동 입력 감지용 레퍼런스 추가
         private int _comboIndex = 0;
         private float _lastAttackTime;
         private bool _isAttacking;
         private bool _inputBuffered;
+
+        // 조작 임계값 상수화 (Rule 3-2 준수)
+        private const float RecoveryCancelThreshold = 0.1f;
 
         public bool IsAttacking => _isAttacking;
 
@@ -36,11 +49,17 @@ private PlayerView _view;
         {
             _rb = GetComponent<Rigidbody>();
             _view = GetComponent<PlayerView>();
+            _controller = GetComponent<PlayerController>();
             _mainCamera = Camera.main;
             
             if (_view == null)
             {
                 Debug.LogWarning("PlayerCombat: PlayerView component not found! Animations may not play.");
+            }
+
+            if (_controller == null)
+            {
+                Debug.LogError("PlayerCombat: PlayerController component not found! Recovery Cancel will not work.");
             }
 
             if (_mainCamera == null)
@@ -165,7 +184,7 @@ private PlayerView _view;
             StartCoroutine(AttackCoroutine());
         }
 
-        private IEnumerator AttackCoroutine()
+private IEnumerator AttackCoroutine()
         {
             _isAttacking = true;
             _inputBuffered = false;
@@ -176,38 +195,58 @@ private PlayerView _view;
             }
 
             _comboIndex++;
-            // 콤보 인덱스 방체 및 배열 범위 동기화 (Rule 4-4 준수)
-            if (_comboIndex > _attackDurations.Length)
+            if (_comboIndex > _comboAttacks.Length)
             {
                 _comboIndex = 1;
             }
 
             _lastAttackTime = Time.time;
+            AttackData currentAttack = _comboAttacks[_comboIndex - 1];
 
-            // 공격 정밀 방향 계산 및 회전 스냅 (Body Snap)
             Vector3 attackDir = GetAimDirection();
             if (attackDir != Vector3.zero)
             {
                 transform.rotation = Quaternion.LookRotation(attackDir);
             }
 
-            // 애니메이션 실행
             if (_view != null)
             {
                 _view.PlayAttack(_comboIndex);
             }
 
-            // 마이크로 대시: 콤보 단계별 정밀 추진력 주입
-            float currentForce = GetMicroDashForce(_comboIndex);
-            Vector3 velocity = attackDir * currentForce;
+            // [원복] 1회성 속입 주입 및 WaitForSeconds 대기 방식으로 원상 복구
+            Vector3 velocity = attackDir * currentAttack.DashForce;
             velocity.y = _rb.linearVelocity.y;
             _rb.linearVelocity = velocity;
 
-            // 콤보 단계별 정밀 지속 시간 대기
-            float currentDuration = GetAttackDuration(_comboIndex);
-            yield return new WaitForSeconds(currentDuration);
+            // 공격 액션 구간 온전 대기
+            yield return new WaitForSeconds(currentAttack.Duration);
+
+            // 5. 복구 구간 진입 및 입력 감지 루프
+            int recState = _comboIndex == 1 ? PlayerView.AttackARecState : PlayerView.AttackBRecState;
+            if (_comboIndex < 3 && _view != null)
+            {
+                _view.PlayAction(recState);
+            }
+
+            float elapsed = 0f;
+            while (elapsed < currentAttack.RecoveryDuration)
+            {
+                if (_inputBuffered)
+                {
+                    break;
+                }
+
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
 
             _isAttacking = false;
+
+            if (_comboIndex == _comboAttacks.Length)
+            {
+                _inputBuffered = false;
+            }
 
             if (_inputBuffered)
             {
@@ -221,7 +260,6 @@ private PlayerView _view;
         {
             _isAttacking = true;
 
-            // 정밀 방향 계산 및 회전 스냅 (Body Snap)
             Vector3 attackDir = GetAimDirection();
             if (attackDir != Vector3.zero)
             {
@@ -233,21 +271,23 @@ private PlayerView _view;
                 _view.PlaySpecial();
             }
 
-            Vector3 velocity = attackDir * _specialMicroDashForce;
+            Vector3 velocity = attackDir * _specialAttack.DashForce;
             velocity.y = _rb.linearVelocity.y;
             _rb.linearVelocity = velocity;
 
-            yield return new WaitForSeconds(_specialDuration);
+            // 1. 공격 액션 구간 온전 대기
+            yield return new WaitForSeconds(_specialAttack.Duration);
+
+            // 2. 복구 구간 온전 대기
+            yield return new WaitForSeconds(_specialAttack.RecoveryDuration);
+
             _isAttacking = false;
         }
-
-
 
         private IEnumerator MagicAttackCoroutine()
         {
             _isAttacking = true;
 
-            // 정밀 방향 계산 및 회전 스냅 (Body Snap)
             Vector3 attackDir = GetAimDirection();
             if (attackDir != Vector3.zero)
             {
@@ -259,32 +299,17 @@ private PlayerView _view;
                 _view.PlayMagic();
             }
 
-            Vector3 velocity = attackDir * _magicMicroDashForce;
+            Vector3 velocity = attackDir * _magicAttack.DashForce;
             velocity.y = _rb.linearVelocity.y;
             _rb.linearVelocity = velocity;
 
-            yield return new WaitForSeconds(_magicDuration);
+            // 1. 공격 액션 구간 온전 대기
+            yield return new WaitForSeconds(_magicAttack.Duration);
+
+            // 2. 복구 구간 온전 대기
+            yield return new WaitForSeconds(_magicAttack.RecoveryDuration);
+
             _isAttacking = false;
         }
-
-        /// <summary>
-        /// 현재 콤보 단계에 대응하는 공격 지속 시간을 정밀하게 반환합니다. (0.1ms 정밀도)
-        /// </summary>
-        private float GetAttackDuration(int comboIndex)
-        {
-            int index = Mathf.Clamp(comboIndex - 1, 0, _attackDurations.Length - 1);
-            return _attackDurations.Length > 0 ? _attackDurations[index] : 0.3f;
-        }
-
-        /// <summary>
-        /// 현재 콤보 단계에 대응하는 마이크로 대시 추진력을 정밀하게 반환합니다. (0.1mm 정밀도)
-        /// </summary>
-        private float GetMicroDashForce(int comboIndex)
-        {
-            int index = Mathf.Clamp(comboIndex - 1, 0, _microDashForces.Length - 1);
-            return _microDashForces.Length > 0 ? _microDashForces[index] : 12f;
-        }
-
-
     }
 }

@@ -30,6 +30,7 @@ namespace Pluto.Actors
         private PlayerCombat _combat;
         private PlayerView _view;
         private Vector2 _moveInput;
+        public Vector2 MoveInput => _moveInput; // Recovery Cancel 감지용 프로퍼티 노출
         private Camera _mainCamera;
 
         private int _currentDashCharges;
@@ -38,39 +39,24 @@ namespace Pluto.Actors
         [SerializeField] private float _rotationSpeed = 15.0f;
         private bool _isDashing;
 
-        protected override void Awake()
+        private void Awake()
         {
-            base.Awake();
-            Debug.Log("<color=green>[Pluto]</color> PlayerController Initializing...");
-            _statHandler = GetComponent<StatHandler>();
-            _combat = GetComponent<PlayerCombat>();
+            Rb = GetComponent<Rigidbody>();
             _view = GetComponent<PlayerView>();
-            _mainCamera = Camera.main;
-            
+            _combat = GetComponent<PlayerCombat>();
+            _statHandler = GetComponent<StatHandler>();
+
+            if (Rb != null)
+            {
+                // 물리 보간 활성화를 통해 고주사율 모니터에서의 이동 끊김(Stuttering) AUTHORITATIVLY 해결
+                Rb.interpolation = RigidbodyInterpolation.Interpolate;
+                Rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+
+                // 물리적 충돌로 인한 0.1mm 단위의 원치 않는 회전 뒤틀림을 AUTHORITATIVLY 방지
+                Rb.freezeRotation = true;
+            }
+
             _currentDashCharges = _maxDashCharges;
-
-            if (_statHandler == null)
-            {
-                Debug.LogError("PlayerController: StatHandler component not found!");
-                return;
-            }
-
-            if (_combat == null)
-            {
-                Debug.LogError("PlayerController: PlayerCombat component not found!");
-                return;
-            }
-
-            if (_view == null)
-            {
-                Debug.LogWarning("PlayerController: PlayerView component not found! Animations may not play.");
-            }
-
-            if (_mainCamera == null)
-            {
-                Debug.LogError("PlayerController: Main Camera not found!");
-                return;
-            }
         }
 
         private void Update()
@@ -112,19 +98,26 @@ namespace Pluto.Actors
         /// </summary>
         public void OnDash(InputValue value)
         {
-            if (value.isPressed && _currentDashCharges > 0 && !_isDashing)
+            if (!value.isPressed)
             {
-                // 공격 중이라면 공격을 취소하고 대시 실행 (Dash Cancel)
-                if (_combat != null && _combat.IsAttacking)
-                {
-                    _combat.CancelAttack();
-                }
-
-                StartCoroutine(DashCoroutine());
+                return;
             }
+
+            if (_currentDashCharges <= 0 || _isDashing)
+            {
+                return;
+            }
+
+            // 공격 중이라면 공격을 취소하고 대시 실행 (Dash Cancel)
+            if (_combat != null && _combat.IsAttacking)
+            {
+                _combat.CancelAttack();
+            }
+
+            StartCoroutine(DashCoroutine());
         }
 
-        private System.Collections.IEnumerator DashCoroutine()
+private System.Collections.IEnumerator DashCoroutine()
         {
             _isDashing = true;
             IsInvincible = true;
@@ -134,31 +127,35 @@ namespace Pluto.Actors
             float originalDrag = Rb.linearDamping;
             Rb.linearDamping = 0f;
 
-            // 첫 대시 시작 시 쿨다운 타이머 시작
             if (_currentDashCharges == _maxDashCharges - 1)
             {
                 _dashCooldownTimer = _dashCooldown;
             }
 
-            // 이동 입력이 있으면 그 방향으로, 없으면 현재 보는 방향으로 대시
             Vector3 dashDir = new Vector3(_moveInput.x, 0, _moveInput.y).normalized;
             if (dashDir == Vector3.zero)
             {
                 dashDir = transform.forward;
             }
 
-            // 애니메이션 실행
-            if (_view != null)
+            if (_view != null) 
             {
                 _view.PlayDash();
             }
 
-            float startTime = Time.time;
-            var wait = new WaitForFixedUpdate(); // 물리 엔진 스텝과 동기화
+            // Time.fixedTime을 사용하여 물리 엔진 스텝과 동기화
+            float startFixedTime = Time.fixedTime;
+            var wait = new WaitForFixedUpdate();
             
-            while (Time.time < startTime + _dashDuration)
+            while (Time.fixedTime < startFixedTime + _dashDuration)
             {
-                // 중력(y속도)을 보존하면서 추진력 주입
+                // 방향 보간 (Slerp 유지)
+                if (dashDir != Vector3.zero)
+                {
+                    transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dashDir), _rotationSpeed * Time.fixedDeltaTime);
+                }
+
+                // 이전의 linearVelocity 직접 제어 방식으로 원복
                 Vector3 velocity = dashDir * _dashSpeed;
                 velocity.y = Rb.linearVelocity.y;
                 Rb.linearVelocity = velocity;
@@ -168,9 +165,10 @@ namespace Pluto.Actors
 
             // 물리 저항 원상 복구 및 상태 해제
             Rb.linearDamping = originalDrag;
-
-            // 대시 이동 종료 후 급제동 및 경직(End-lag) 구간 시작 (Rule 4-4 준수)
+            
+            // 대시 종료 시 속도 초기화
             Rb.linearVelocity = Vector3.zero;
+            
             yield return new WaitForSeconds(_dashRecoveryDuration);
 
             _isDashing = false;
@@ -179,10 +177,10 @@ namespace Pluto.Actors
 
         private void FixedUpdate()
         {
-            // 대시 중이거나 공격 중일 때는 키보드 이동/회전 입력을 차단하여 물리적 일관성을 확보합니다. (Rule 4-4 준수)
-            bool canMoveByInput = !_isDashing && (_combat == null || !_combat.IsAttacking);
-
-            if (canMoveByInput)
+            // 대시 중이거나 공격 중일 때는 키보드 이동/회전 입력을 원천 차단하여 물리적 일관성을 확보합니다.
+            bool isBusy = _isDashing || (_combat != null && _combat.IsAttacking);
+            
+            if (!isBusy)
             {
                 ApplyMovement();
                 ApplyRotation();

@@ -565,6 +565,70 @@ PrefabInstance:
       propertyPath: _specialDuration
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 2869889482255232001, guid: 1980164f95623854ba15bc1775d77164, type: 3}
+      propertyPath: _magicAttack.Duration
+      value: 0.666
+      objectReference: {fileID: 0}
+    - target: {fileID: 2869889482255232001, guid: 1980164f95623854ba15bc1775d77164, type: 3}
+      propertyPath: _specialAttack.Duration
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2869889482255232001, guid: 1980164f95623854ba15bc1775d77164, type: 3}
+      propertyPath: _magicAttack.RecoveryDuration
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2869889482255232001, guid: 1980164f95623854ba15bc1775d77164, type: 3}
+      propertyPath: '_attackDurations.Array.data[0]'
+      value: 0.216
+      objectReference: {fileID: 0}
+    - target: {fileID: 2869889482255232001, guid: 1980164f95623854ba15bc1775d77164, type: 3}
+      propertyPath: '_attackDurations.Array.data[1]'
+      value: 0.266
+      objectReference: {fileID: 0}
+    - target: {fileID: 2869889482255232001, guid: 1980164f95623854ba15bc1775d77164, type: 3}
+      propertyPath: '_attackDurations.Array.data[2]'
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2869889482255232001, guid: 1980164f95623854ba15bc1775d77164, type: 3}
+      propertyPath: _specialAttack.RecoveryDuration
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2869889482255232001, guid: 1980164f95623854ba15bc1775d77164, type: 3}
+      propertyPath: _comboAttacks.Array.data[0].Duration
+      value: 0.216
+      objectReference: {fileID: 0}
+    - target: {fileID: 2869889482255232001, guid: 1980164f95623854ba15bc1775d77164, type: 3}
+      propertyPath: _comboAttacks.Array.data[1].Duration
+      value: 0.266
+      objectReference: {fileID: 0}
+    - target: {fileID: 2869889482255232001, guid: 1980164f95623854ba15bc1775d77164, type: 3}
+      propertyPath: _comboAttacks.Array.data[2].Duration
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2869889482255232001, guid: 1980164f95623854ba15bc1775d77164, type: 3}
+      propertyPath: '_attackRecoveryDurations.Array.data[0]'
+      value: 0.433
+      objectReference: {fileID: 0}
+    - target: {fileID: 2869889482255232001, guid: 1980164f95623854ba15bc1775d77164, type: 3}
+      propertyPath: '_attackRecoveryDurations.Array.data[1]'
+      value: 0.516
+      objectReference: {fileID: 0}
+    - target: {fileID: 2869889482255232001, guid: 1980164f95623854ba15bc1775d77164, type: 3}
+      propertyPath: '_attackRecoveryDurations.Array.data[2]'
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2869889482255232001, guid: 1980164f95623854ba15bc1775d77164, type: 3}
+      propertyPath: _comboAttacks.Array.data[0].RecoveryDuration
+      value: 0.433
+      objectReference: {fileID: 0}
+    - target: {fileID: 2869889482255232001, guid: 1980164f95623854ba15bc1775d77164, type: 3}
+      propertyPath: _comboAttacks.Array.data[1].RecoveryDuration
+      value: 0.516
+      objectReference: {fileID: 0}
+    - target: {fileID: 2869889482255232001, guid: 1980164f95623854ba15bc1775d77164, type: 3}
+      propertyPath: _comboAttacks.Array.data[2].RecoveryDuration
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7242374778995386618, guid: 1980164f95623854ba15bc1775d77164, type: 3}
       propertyPath: m_Name
       value: Player
@@ -607,6 +671,14 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8055186914178036288, guid: 1980164f95623854ba15bc1775d77164, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8564933418371028350, guid: 1980164f95623854ba15bc1775d77164, type: 3}
+      propertyPath: _dashDuration
+      value: 0.55
+      objectReference: {fileID: 0}
+    - target: {fileID: 8564933418371028350, guid: 1980164f95623854ba15bc1775d77164, type: 3}
+      propertyPath: _dashRecoveryDuration
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
