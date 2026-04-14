@@ -645,6 +645,10 @@ PrefabInstance:
       propertyPath: _comboAttacks.Array.data[2].RecoveryDuration
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4119079544030832698, guid: 1980164f95623854ba15bc1775d77164, type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7242374778995386618, guid: 1980164f95623854ba15bc1775d77164, type: 3}
       propertyPath: m_Name
       value: Player

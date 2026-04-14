@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Pluto.Core;
+using Pluto.Core;
+
 
 namespace Pluto.Actors
 {
@@ -124,6 +126,49 @@ namespace Pluto.Actors
 
             StartCoroutine(DashCoroutine());
         }
+
+        /// <summary>
+        /// 주변의 가장 가까운 상호작용 가능 객체 탐색
+        /// </summary>
+        /// <returns>탐색된 IInteractable 객체 (없으면 null)</returns>
+        public IInteractable GetNearestInteractable()
+        {
+            // 1. 플레이어 반경 내의 모든 콜라이더 탐색
+            Collider[] colliders = Physics.OverlapSphere(transform.position, _interactionRange);
+            IInteractable nearest = null;
+            float minDistance = float.MaxValue;
+
+            foreach (var col in colliders)
+            {
+                // 2. IInteractable 인터페이스를 포함하는지 확인
+                if (col.TryGetComponent<IInteractable>(out var interactable))
+                {
+                    // 3. 상호작용 가능 상태인 경우에만 거리 계산
+                    if (interactable.CanInteract())
+                    {
+                        float dist = Vector3.Distance(transform.position, col.transform.position);
+                        if (dist < minDistance)
+                        {
+                            minDistance = dist;
+                            nearest = interactable;
+                        }
+                    }
+                }
+            }
+
+            return nearest;
+        }
+
+        /// <summary>
+        /// 에디터 씬 뷰에서 상호작용 범위를 시각화
+        /// </summary>
+        private void OnDrawGizmosSelected()
+        {
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(transform.position, _interactionRange);
+        }
+
+
 
         /// <summary>
         /// 대시 물리 로직 코루틴
@@ -295,5 +340,10 @@ namespace Pluto.Actors
                 Rb.MoveRotation(Quaternion.Slerp(transform.rotation, targetRotation, Time.fixedDeltaTime * _rotationSpeed));
             }
         }
-    }
+    
+
+
+        [Header("Interaction Settings")]
+        [SerializeField] private float _interactionRange = 2.0f;
+}
 }

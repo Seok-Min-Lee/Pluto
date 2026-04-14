@@ -1,6 +1,8 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Pluto.Core;
+
 
 namespace Pluto.Actors
 {
@@ -151,10 +153,31 @@ namespace Pluto.Actors
         /// </summary>
         public void OnInteract(InputValue value)
         {
-            if (value.isPressed)
+            // 디버그용 로그 추가 (입력 감지 확인)
+            Debug.Log($"<color=cyan>[Pluto Input]</color> Interact Key Pressed! Value: {value.isPressed}");
+
+            if (value.isPressed && _controller != null)
             {
-                Debug.Log("<color=green>[Pluto Combat]</color> <b>Interact Requested! (E)</b>");
-                // TODO: 근처의 상호작용 가능한 객체 탐색 및 실행
+                // 1. 주변의 상호작용 가능 객체 탐색
+                IInteractable target = _controller.GetNearestInteractable();
+                
+                if (target != null)
+                {
+                    Debug.Log($"<color=green>[Pluto Interaction]</color> Interacting with <b>{target.GetType().Name}</b>");
+                    
+                    // 2. 상호작용 애니메이션 재생
+                    if (_view != null) 
+                    {
+                        _view.PlayInteract();
+                    }
+                    
+                    // 3. 상호작용 실행
+                    target.Interact();
+                }
+                else
+                {
+                    Debug.Log("<color=gray>[Pluto Interaction]</color> No interactable object nearby.");
+                }
             }
         }
 

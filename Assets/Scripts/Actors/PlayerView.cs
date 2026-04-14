@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace Pluto.Actors
 {
@@ -81,6 +81,12 @@ namespace Pluto.Actors
         public void PlayHit() => PlayAction(HitState);
         public void PlayDash() => PlayAction(DashState, 0.05f); // 대시는 더 정밀하게 즉시 전이
         public void PlayDie() => PlayAction(DeathState);
+
+        /// <summary>
+        /// 상호작용 애니메이션을 재생합니다.
+        /// </summary>
+        public void PlayInteract() => PlayAction(InteractState);
+
         
         /// <summary>
         /// 소모품 사용 등 기타 트리거용 (필요 시 CrossFade로 확장 가능)
@@ -89,5 +95,8 @@ namespace Pluto.Actors
         {
             _animator.SetTrigger(Animator.StringToHash("Consume"));
         }
-    }
+    
+
+        public static readonly int InteractState = Animator.StringToHash("Interact");
+}
 }
