@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Pluto.Core;
@@ -359,10 +359,14 @@ namespace Pluto.Actors
         /// <summary>
         /// 매직 공격 프로세스 코루틴
         /// </summary>
+        /// <summary>
+        /// 매직 공격 프로세스 코루틴
+        /// </summary>
         private IEnumerator MagicAttackCoroutine()
         {
             _isAttacking = true;
 
+            // 1. 조준 방향 기준 회전 스냅
             Vector3 attackDir = GetAimDirection();
             if (attackDir != Vector3.zero)
             {
@@ -374,15 +378,27 @@ namespace Pluto.Actors
                 _view.PlayMagic();
             }
 
+            // 2. 투사체 발사 타이밍 (애니메이션 시작 직후)
+            if (_magicProjectilePrefab != null)
+            {
+                Vector3 spawnPos = transform.position + transform.TransformDirection(_magicSpawnOffset);
+                GameObject projObj = Instantiate(_magicProjectilePrefab, spawnPos, Quaternion.LookRotation(attackDir));
+                
+                if (projObj.TryGetComponent<Projectile>(out var projectile))
+                {
+                    projectile.Initialize(attackDir, _magicProjectileSpeed, _magicProjectileDamage, _magicProjectileLifetime, _targetLayer);
+                }
+            }
+
             if (_controller != null)
             {
                 _controller.SetLinearVelocity(attackDir, _magicAttack.DashForce);
             }
 
-            // 1. 공격 액션 구간 온전 대기
+            // 3. 공격 액션 구간 대기
             yield return new WaitForSeconds(_magicAttack.Duration);
 
-            // 2. 복구 구간 온전 대기
+            // 4. 복구 구간 대기
             yield return new WaitForSeconds(_magicAttack.RecoveryDuration);
 
             _isAttacking = false;
@@ -396,5 +412,14 @@ namespace Pluto.Actors
         [SerializeField] private float _attackAngle = 120f;
         [SerializeField] private LayerMask _targetLayer;
         [SerializeField] private Vector3 _hitOffset = new Vector3(0, 0, 0.5f);
+
+
+
+        [Header("Magic Settings")]
+        [SerializeField] private GameObject _magicProjectilePrefab;
+        [SerializeField] private float _magicProjectileSpeed = 15f;
+        [SerializeField] private float _magicProjectileDamage = 25f;
+        [SerializeField] private float _magicProjectileLifetime = 3f;
+        [SerializeField] private Vector3 _magicSpawnOffset = new Vector3(0, 1f, 0.5f);
 }
 }
