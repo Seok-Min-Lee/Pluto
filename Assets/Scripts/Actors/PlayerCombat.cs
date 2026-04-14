@@ -1,7 +1,8 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Pluto.Core;
+using Pluto.Interfaces;
 
 
 namespace Pluto.Actors
@@ -182,6 +183,38 @@ namespace Pluto.Actors
         }
 
         /// <summary>
+        /// 현재 플레이어 전방의 대상을 탐색하여 데미지를 입힙니다.
+        /// </summary>
+        private void PerformHitDetection()
+        {
+            // 1. 판정 중심점 계산
+            Vector3 hitPoint = transform.position + transform.TransformDirection(_hitOffset);
+
+            // 2. 범위 내의 모든 콜라이더 탐색
+            Collider[] targets = Physics.OverlapSphere(hitPoint, _attackRange, _targetLayer);
+            
+            foreach (var col in targets)
+            {
+                // 3. IDamageable 인터페이스 확인
+                if (col.TryGetComponent<IDamageable>(out var damageable))
+                {
+                    // 4. 스태츠 기반 데미지 계산 (현재는 기본값 전달)
+                    damageable.TakeDamage(_attackDamage);
+                    Debug.Log($"<color=red>[Pluto Combat]</color> Hit <b>{col.name}</b> for <b>{_attackDamage}</b> damage!");
+                }
+            }
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            // 공격 판정 범위 시각화
+            Gizmos.color = Color.red;
+            Vector3 hitPoint = transform.position + transform.TransformDirection(_hitOffset);
+            Gizmos.DrawWireSphere(hitPoint, _attackRange);
+        }
+
+
+        /// <summary>
         /// 공격 동작 즉시 중단 및 상태 리셋
         /// </summary>
         public void CancelAttack()
@@ -247,8 +280,12 @@ namespace Pluto.Actors
                 _controller.SetLinearVelocity(attackDir, currentAttack.DashForce);
             }
 
-            // 4. 공격 액션 지속 시간 대기
-            yield return new WaitForSeconds(currentAttack.Duration);
+            // [추가] 공격 판정 타이밍 (액션 지속 시간의 20% 지점에서 판정 발생)
+            yield return new WaitForSeconds(currentAttack.Duration * 0.2f);
+            PerformHitDetection();
+
+            // 4. 남은 공격 액션 지속 시간 대기
+            yield return new WaitForSeconds(currentAttack.Duration * 0.8f);
 
             // 5. 복구(Recovery) 구간 진입 및 입력 버퍼링 감지
             int recState = _comboIndex == 1 ? PlayerView.AttackARecState : PlayerView.AttackBRecState;
@@ -280,7 +317,7 @@ namespace Pluto.Actors
             if (_inputBuffered)
             {
                 HandleAttackInput();
-        }
+            }
         }
 
         /// <summary>
@@ -306,8 +343,12 @@ namespace Pluto.Actors
                 _controller.SetLinearVelocity(attackDir, _specialAttack.DashForce);
             }
 
-            // 1. 공격 액션 구간 온전 대기
-            yield return new WaitForSeconds(_specialAttack.Duration);
+            // [추가] 공격 판정 타이밍
+            yield return new WaitForSeconds(_specialAttack.Duration * 0.3f);
+            PerformHitDetection();
+
+            // 1. 남은 공격 액션 구간 대기
+            yield return new WaitForSeconds(_specialAttack.Duration * 0.7f);
 
             // 2. 복구 구간 온전 대기
             yield return new WaitForSeconds(_specialAttack.RecoveryDuration);
@@ -346,5 +387,14 @@ namespace Pluto.Actors
 
             _isAttacking = false;
         }
-    }
+    
+
+
+        [Header("Combat Settings")]
+        [SerializeField] private float _attackDamage = 10f;
+        [SerializeField] private float _attackRange = 1.5f;
+        [SerializeField] private float _attackAngle = 120f;
+        [SerializeField] private LayerMask _targetLayer;
+        [SerializeField] private Vector3 _hitOffset = new Vector3(0, 0, 0.5f);
+}
 }
